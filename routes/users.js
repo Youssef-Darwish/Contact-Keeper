@@ -1,14 +1,17 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const { check, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
+const config = require('config');
 const User = require('../models/User');
+
 
 // @route     POST api/users
 // @desc      Refister a user
 // @access    Public
 
-//Check for user input using check module
+//Check for user input using check module (2nd parameter)
 router.post('/', [
     check('name', 'Please add name')
         .not()
@@ -38,7 +41,22 @@ router.post('/', [
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(password, salt);
         await user.save();
-        res.send('User saved');
+
+        const payload = {
+            user: {
+                id: user.id
+            }
+        };
+        //sign the payload with jwtToken
+        jwt.sign(payload, config.get('jwtSecret'), {
+            expiresIn: 360000
+        }, (err, token) => {
+            if (err) {
+                throw err
+            }
+            //Return JWT token
+            res.json({ token });
+        });
 
     } catch (err) {
         console.log(err.msg);

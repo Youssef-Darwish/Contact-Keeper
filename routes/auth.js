@@ -1,6 +1,13 @@
 const express = require('express');
-
 const router = express.Router();
+
+const jwt = require('jsonwebtoken');
+const { check, validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs');
+const config = require('config');
+const auth = require('../middleware/auth');
+const User = require('../models/User');
+
 
 
 
@@ -8,16 +15,72 @@ const router = express.Router();
 // @desc      Get logged-in user
 // @access    Private
 
-router.get('/', (req, res) => {
-    res.send("get logged-in  user")
+router.get('/', auth, async (req, res) => {
+
+    const user = await User.findById(req.user.id).select('-password');
+    res.json(user);
+
+    try {
+
+    } catch (err) {
+        console.log(err.message);
+        res.status(500).send('Server Error');
+    }
+    res.send("get logged-in  user");
 });
 
 // @route     POST api/auth
 // @desc      Auth user and get token
 // @access    Public
 
-router.post('/', (req, res) => {
-    res.send("get logged-in  user")
+router.post('/', [
+    check('email', 'Invalid Email')
+        .isEmail(),
+    check('password', 'Password Required').exists()
+], async (req, res) => {
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    const { email, password } = req.body;
+
+    try {
+        //Find user by email
+        let user = await User.findOne({ email });
+        //No user exists
+        if (!user) {
+            return res.status(400).json({ msg: 'Invalid Credentials' });
+        }
+        //check the entered password with the saved hashed password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'Invalid Credentials' });
+        }
+        const payload = {
+            user: {
+                id: user.id
+            }
+        };
+        //sign the payload with jwtToken
+        jwt.sign(payload, config.get('jwtSecret'), {
+            expiresIn: 360000
+        }, (err, token) => {
+            if (err) {
+                throw err
+            }
+            //Return JWT token
+            res.json({ token });
+        });
+
+
+    } catch (err) {
+        console.log(err.msg);
+        res.status(500).send('server error');
+    }
+
+
+
 });
 
 
