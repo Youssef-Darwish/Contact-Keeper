@@ -8,19 +8,13 @@ const config = require('config');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 
-
-
-
 // @route     GET api/auth
 // @desc      Get logged-in user
 // @access    Private
-
 router.get('/', auth, async (req, res) => {
-
-    const user = await User.findById(req.user.id).select('-password');
-    res.json(user);
-
     try {
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
 
     } catch (err) {
         console.log(err.message);
