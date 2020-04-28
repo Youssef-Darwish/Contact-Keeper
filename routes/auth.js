@@ -20,7 +20,7 @@ router.get('/', auth, async (req, res) => {
         console.log(err.message);
         res.status(500).send('Server Error');
     }
-    res.send("get logged-in  user");
+
 });
 
 // @route     POST api/auth
