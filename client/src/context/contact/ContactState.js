@@ -1,5 +1,5 @@
 import React, { useReducer } from 'react';
-import { v4 as generateId } from 'uuid';
+import axios from 'axios';
 import ContactContext from './contactContext';
 import contactReducer from './contactReducer';
 
@@ -10,38 +10,17 @@ import {
     CLEAR_CURRENT,
     UPDATE_CONTACT,
     FILTER_CONTACTS,
-    CLEAR_FILTER
+    CLEAR_FILTER,
+    CONTACT_ERROR
 } from '../types';
 
 const ContactState = props => {
     const initialState = {
         //Some hard-coded contacts for now
-        contacts: [
-            {
-                id: 1,
-                name: 'John Doe',
-                email: 'John@gmail.com',
-                phone: '03123123',
-                type: 'personal'
-            },
-            {
-                id: 2,
-                name: 'bron Doe',
-                email: 'bron@gmail.com',
-                phone: '03123123',
-                type: 'personal'
-            },
-            {
-                id: 3,
-                name: 'harry Doe',
-                email: 'harry@gmail.com',
-                phone: '03123123',
-                type: 'professional'
-            },
-
-        ],
+        contacts: [],
         current: null,
-        filtered: null
+        filtered: null,
+        error: null
     };
 
 
@@ -49,11 +28,27 @@ const ContactState = props => {
 
 
     //All the actions
-    //Add Contact
-    const addContact = (contact) => {
-        contact.id = generateId();
-        dispatch({ type: ADD_CONTACT, payload: contact });
-    }
+    const addContact = async contact => {
+        const config = {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+
+        try {
+            const res = await axios.post('/api/contacts', contact, config);
+
+            dispatch({
+                type: ADD_CONTACT,
+                payload: res.data
+            });
+        } catch (err) {
+            dispatch({
+                type: CONTACT_ERROR,
+                payload: err.response.msg
+            });
+        }
+    };
 
     //Delete Contact
     const deleteContact = (id) => {
@@ -98,6 +93,7 @@ const ContactState = props => {
                 contacts: state.contacts,
                 current: state.current,
                 filtered: state.filtered,
+                error: state.error,
                 addContact,
                 deleteContact,
                 setCurrent,
